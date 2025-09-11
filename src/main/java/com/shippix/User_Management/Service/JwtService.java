@@ -1,5 +1,6 @@
 package com.shippix.User_Management.Service;
 
+import com.shippix.User_Management.Model.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -23,17 +24,15 @@ public class JwtService {
     }
 
     // Generate JWT from UserDetails
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(Users user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList());
+        claims.put("roles", Collections.singletonList(user.getRole().name()));
 
         return Jwts.builder()
                 .claims(claims)
-                .subject(userDetails.getUsername())
+                .subject(user.getEmail())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 45))
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 5))
                 .signWith(getKey())
                 .compact();
     }

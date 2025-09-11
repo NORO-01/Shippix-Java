@@ -15,6 +15,10 @@ public class UserPrincipal implements UserDetails {
         this.users = users;
     }
 
+    public Long getId() {
+        return users.getId();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(
@@ -29,7 +33,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getUsername() {
-        return users.getUsername();
+        return users.getEmail();
     }
 
     public String getEmail() {
