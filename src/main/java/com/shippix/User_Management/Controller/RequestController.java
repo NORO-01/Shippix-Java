@@ -28,11 +28,12 @@ public class RequestController {
     }
 
     @PostMapping("/{id}/approve")
-    public ResponseEntity<BusinessOwner> approve(
-            @PathVariable Long id,
-            @RequestParam String password
-    ) {
-        return ResponseEntity.ok(requestService.approveRequest(id, password));
+    public ResponseEntity<BusinessOwner> approve(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(requestService.approveRequest(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping("/{id}/reject")
