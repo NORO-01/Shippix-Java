@@ -16,4 +16,3 @@ import lombok.Setter;
 public class Admin extends Users {
     // Admin-specific fields (if needed later)
 }
-

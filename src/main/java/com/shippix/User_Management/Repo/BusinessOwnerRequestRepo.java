@@ -12,4 +12,3 @@ public interface BusinessOwnerRequestRepo extends JpaRepository<BusinessOwnerReq
     List<BusinessOwnerRequest> findByStatus(BusinessOwnerRequest.Status status);
 }
 
-

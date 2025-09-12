@@ -2,16 +2,23 @@ package com.shippix.User_Management.Service;
 
 import com.shippix.User_Management.DTO.BORequest;
 import com.shippix.User_Management.DTO.BOResponse;
+import com.shippix.User_Management.DTO.EmailBody;
 import com.shippix.User_Management.Model.BusinessOwner;
 import com.shippix.User_Management.Model.BusinessOwnerRequest;
+import com.shippix.User_Management.Model.PasswordToken;
 import com.shippix.User_Management.Model.Users;
 import com.shippix.User_Management.Repo.BusinessOwnerRequestRepo;
+import com.shippix.User_Management.Repo.PasswordTokenRepo;
 import com.shippix.User_Management.Repo.UserRepo;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -19,7 +26,10 @@ public class BusinessOwnerRequestService {
 
     private final BusinessOwnerRequestRepo requestRepo;
     private final UserRepo userRepo;
-    private final BCryptPasswordEncoder encoder;
+    private final PasswordTokenRepo passwordTokenRepo;
+    private final EmailService emailService;
+    private final BCryptPasswordEncoder passwordEncoder;
+
 
     // Submit a new request (registration flow)
     public BOResponse submitRequest(BORequest dto) {
@@ -38,8 +48,9 @@ public class BusinessOwnerRequestService {
         return toResponse(saved);
     }
 
-    // Approve a request and create a BusinessOwner user
-    public BusinessOwner approveRequest(Long requestId, String rawPassword) {
+    // Approve a request and send password setup link
+    @Transactional
+    public BusinessOwner approveRequest(Long requestId) throws MessagingException {
         BusinessOwnerRequest request = requestRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
@@ -54,7 +65,6 @@ public class BusinessOwnerRequestService {
         bo.setUsername(request.getEmail());
         bo.setEmail(request.getEmail());
         bo.setPhoneNumber(request.getPhoneNumber());
-        bo.setPassword(encoder.encode(rawPassword));
         bo.setRole(Users.Role.ROLE_BUSINESS_OWNER);
         bo.setBusinessName(request.getBusinessName());
         bo.setBusinessType(request.getBusinessType());
@@ -62,7 +72,30 @@ public class BusinessOwnerRequestService {
         bo.setLatitude(request.getLatitude());
         bo.setLongitude(request.getLongitude());
 
-        return userRepo.save(bo);
+        String tempPassword = "TEMP_PASSWORD_" + UUID.randomUUID().toString().substring(0, 8);
+        bo.setPassword(passwordEncoder.encode(tempPassword));
+
+        userRepo.save(bo);
+
+        String token = UUID.randomUUID().toString();
+        PasswordToken setupToken = PasswordToken.builder()
+                .token(token)
+                .user(bo)
+                .expiryTime(new Date(System.currentTimeMillis() + 1000*60*60*24*3))
+                .build();
+
+        passwordTokenRepo.save(setupToken);
+
+        String link = "https://localhost:8080/set-password?token=" + token;
+        EmailBody email = EmailBody.builder()
+                .to(bo.getEmail())
+                .subject("Set up your Shippix account password")
+                .text("Welcome to Shippix! Please set up your password by clicking the link below.")
+                .link(link)
+                .build();
+        
+        emailService.sendEmail(email);
+        return bo;
     }
 
     // Reject a request
@@ -102,5 +135,4 @@ public class BusinessOwnerRequestService {
         );
     }
 }
-
 

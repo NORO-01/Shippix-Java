@@ -24,4 +24,3 @@ public class BusinessOwner extends Users {
     @Column(nullable = false)
     private Double longitude;
 }
-

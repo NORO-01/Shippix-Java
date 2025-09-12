@@ -22,14 +22,14 @@ public class ShippixJavaApplication {
 			if (existing.isEmpty()) {
 				Users admin = new Users();
 				admin.setUsername("admin1");
-				admin.setEmail("admin1@example.com");
+				admin.setEmail("nouredinshimi@gmail.com");
 				admin.setPassword(passwordEncoder.encode("admin123"));
 				admin.setRole(Users.Role.ROLE_ADMIN);
 				userRepository.save(admin);
 				System.out.println("Admin user created: admin1 / admin123");
 			} else {
 				Users admin = existing.get();
-				admin.setEmail("admin1@example.com");
+				admin.setEmail("nouredinshimi@gmail.com");
 				admin.setPassword(passwordEncoder.encode("admin123"));
 				admin.setRole(Users.Role.ROLE_ADMIN);
 				userRepository.save(admin);
