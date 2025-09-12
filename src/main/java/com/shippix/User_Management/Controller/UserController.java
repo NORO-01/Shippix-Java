@@ -33,3 +33,4 @@ public class UserController {
         return ResponseEntity.ok("Password changed successfully!");
     }
 }
+
