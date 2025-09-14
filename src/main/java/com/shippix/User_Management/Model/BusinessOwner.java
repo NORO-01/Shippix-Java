@@ -1,9 +1,6 @@
 package com.shippix.User_Management.Model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.PrimaryKeyJoinColumn;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 
@@ -16,7 +13,9 @@ public class BusinessOwner extends Users {
 
     private String nationalId;
     private String businessName;
-    private String businessType;
+
+    @Enumerated(EnumType.STRING)
+    private BusinessType businessType;
 
     @Column(nullable = false)
     private Double latitude;

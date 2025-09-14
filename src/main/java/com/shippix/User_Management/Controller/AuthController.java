@@ -1,10 +1,10 @@
 package com.shippix.User_Management.Controller;
 
-import com.shippix.User_Management.DTO.BORequest;
-import com.shippix.User_Management.DTO.BOResponse;
-import com.shippix.User_Management.DTO.LoginRequest;
-import com.shippix.User_Management.DTO.NewPassRequest;
+import com.shippix.User_Management.DTO.*;
+import com.shippix.User_Management.Email.EmailTemplate;
+import com.shippix.User_Management.Email.EmailTemplateFactory;
 import com.shippix.User_Management.Service.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +22,8 @@ public class AuthController {
     private final JwtService jwtService;
     private final BusinessOwnerRequestService businessOwnerRequestService;
     private final PasswordService passwordService;
+    private final EmailService emailService;
+    private final EmailTemplateFactory emailTemplateFactory;
 
     // ---------------- LOGIN ----------------
     @PostMapping("/login")
@@ -42,21 +44,30 @@ public class AuthController {
 
     // ---------------- REGISTER ----------------
     @PostMapping("/register")
-    public ResponseEntity<BOResponse> register(@RequestBody BORequest dto) {
-        return ResponseEntity.ok(businessOwnerRequestService.submitRequest(dto));
+    public ResponseEntity<?> register(@Valid @RequestBody BORequest dto) {
+        try {
+            BOResponse response = businessOwnerRequestService.submitRequest(dto);
+
+            EmailTemplate welcomeEmail = emailTemplateFactory.createWelcomeEmail(dto.email(), dto.name());
+            emailService.sendEmail(welcomeEmail);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     // ---------------- SET PASS ----------------
-    @PostMapping("/setPassword")
-    public ResponseEntity<String> setPassword(@RequestParam String token,
-                                              @RequestBody NewPassRequest newPassword) {
-        try {
-            passwordService.setPassword(token, newPassword);
-            return ResponseEntity.ok("Password set successfully!");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(e.getMessage());
-        }
-    }
+//    @PostMapping("/setPassword")
+//    public ResponseEntity<String> setPassword(@RequestParam String token,
+//                                              @RequestBody NewPassRequest newPassword) {
+//        try {
+//            passwordService.setPassword(token, newPassword);
+//            return ResponseEntity.ok("Password set successfully!");
+//        } catch (RuntimeException e) {
+//            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(e.getMessage());
+//        }
+//    }
 
 
     // ---------------- REFRESH TOKEN ----------------

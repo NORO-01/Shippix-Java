@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface PasswordTokenRepo extends JpaRepository<PasswordToken,Long> {
 
     Optional<PasswordToken> findByOtpAndUser(Integer otp, Users user);
-    Optional<PasswordToken> findByToken(String token);
+    Optional<PasswordToken> findByUser(Users user);
     void deleteByUser(Users user);
 
 }
