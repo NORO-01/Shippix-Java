@@ -39,8 +39,8 @@ public record BORequest(
         @DecimalMax(value = "180.0", inclusive = true, message = "Longitude must be <= 180")
         Double longitude,
 
-        @NotBlank(message = "Business type must not be blank")
-        @Pattern(regexp = "^\\S.*", message = "Business type first character cannot be space")
+        @NotNull(message = "Business type must not be blank")
+   //     @Pattern(regexp = "^\\S.*", message = "Business type first character cannot be space")
         BusinessType businessType,
 
         @NotBlank(message = "Password must not be blank")

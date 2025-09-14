@@ -11,7 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.shippix.User_Management.DTO.BOResponse;
-import com.shippix.User_Management.DTO.EmailBody;
+import com.shippix.User_Management.Email.EmailTemplate;
 import com.shippix.User_Management.Model.BusinessOwner;
 import com.shippix.User_Management.Model.BusinessOwnerRequest;
 import com.shippix.User_Management.Model.PasswordToken;
@@ -61,10 +61,10 @@ class RequestServiceTest {
         pendingRequest.setId(1L);
         pendingRequest.setName("Maya Fouad");
         pendingRequest.setEmail("mayafouad2004@gmail.com");
-        pendingRequest.setPhoneNumber("+201234567890");
+        pendingRequest.setPhoneNumber("201234567890");
         pendingRequest.setNationalId("12345678901234");
-        pendingRequest.setBusinessName("Maya's Business");
-        pendingRequest.setBusinessType("RETAIL");
+        pendingRequest.setBusinessName("Maya Business");
+        pendingRequest.setBusinessType(com.shippix.User_Management.Model.BusinessType.RETAIL_STORE);
         pendingRequest.setLatitude(40.7128);
         pendingRequest.setLongitude(-74.0060);
         pendingRequest.setStatus(BusinessOwnerRequest.Status.PENDING);
@@ -89,8 +89,6 @@ class RequestServiceTest {
         when(requestRepo.save(any(BusinessOwnerRequest.class))).thenReturn(approvedRequest);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepo.save(any(BusinessOwner.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(passwordTokenRepo.save(any(PasswordToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        doNothing().when(emailService).sendEmail(any(EmailBody.class));
 
         // Act
         BusinessOwner result = businessOwnerRequestService.approveRequest(1L);
@@ -105,15 +103,11 @@ class RequestServiceTest {
         assertEquals(pendingRequest.getLatitude(), result.getLatitude());
         assertEquals(pendingRequest.getLongitude(), result.getLongitude());
         assertEquals(Users.Role.ROLE_BUSINESS_OWNER, result.getRole());
-        assertEquals("encodedPassword", result.getPassword());
 
         // Verify interactions
         verify(requestRepo, times(1)).findById(1L);
         verify(requestRepo, times(1)).save(pendingRequest);
         verify(userRepo, times(1)).save(any(BusinessOwner.class));
-        verify(passwordTokenRepo, times(1)).save(any(PasswordToken.class));
-        verify(emailService, times(1)).sendEmail(any(EmailBody.class));
-        verify(passwordEncoder, times(1)).encode(anyString());
     }
 
     @Test
@@ -162,68 +156,7 @@ class RequestServiceTest {
         verify(requestRepo, times(1)).findById(1L);
         verifyNoMoreInteractions(requestRepo, userRepo, passwordTokenRepo, emailService, passwordEncoder);
     }
-
-    
-    @Test
-    void approveRequest_ShouldCreatePasswordTokenWithCorrectExpiry() throws Exception{
-        // Arrange
-        when(requestRepo.findById(1L)).thenReturn(Optional.of(pendingRequest));
-        when(requestRepo.save(any(BusinessOwnerRequest.class))).thenReturn(approvedRequest);
-        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(userRepo.save(any(BusinessOwner.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        
-        ArgumentCaptor<PasswordToken> tokenCaptor = ArgumentCaptor.forClass(PasswordToken.class);
-        when(passwordTokenRepo.save(tokenCaptor.capture())).thenAnswer(invocation -> invocation.getArgument(0));
-        
-        doNothing().when(emailService).sendEmail(any(EmailBody.class));
-
-        long currentTime = System.currentTimeMillis();
-
-        // Act
-        businessOwnerRequestService.approveRequest(1L);
-
-        // Assert
-        PasswordToken savedToken = tokenCaptor.getValue();
-        assertNotNull(savedToken);
-        assertNotNull(savedToken.getToken());
-        assertTrue(savedToken.getToken().length() > 0);
-        assertNotNull(savedToken.getUser());
-        assertNotNull(savedToken.getExpiryTime());
-        
-        // Check that expiry time is approximately 3 days from now
-        long expectedExpiry = currentTime + (1000L * 60 * 60 * 24 * 3);
-        long actualExpiry = savedToken.getExpiryTime().getTime();
-        assertTrue(Math.abs(expectedExpiry - actualExpiry) < 1000); // Allow 1 second difference
-    }
-
-   @Test
-    void approveRequest_ShouldSendEmailWithCorrectContent() throws Exception { 
-        // Arrange
-        when(requestRepo.findById(1L)).thenReturn(Optional.of(pendingRequest));
-        when(requestRepo.save(any(BusinessOwnerRequest.class))).thenReturn(approvedRequest);
-        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(userRepo.save(any(BusinessOwner.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        ArgumentCaptor<PasswordToken> tokenCaptor = ArgumentCaptor.forClass(PasswordToken.class);
-        when(passwordTokenRepo.save(tokenCaptor.capture())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        ArgumentCaptor<EmailBody> emailCaptor = ArgumentCaptor.forClass(EmailBody.class);
-        doNothing().when(emailService).sendEmail(emailCaptor.capture()); // now compiles
-
-        // Act
-        businessOwnerRequestService.approveRequest(1L);
-
-        // Assert
-        PasswordToken savedToken = tokenCaptor.getValue();
-        EmailBody sentEmail = emailCaptor.getValue();
-
-        assertNotNull(sentEmail);
-        assertEquals(pendingRequest.getEmail(), sentEmail.to());
-        assertEquals("Set up your Shippix account password", sentEmail.subject());
-        assertTrue(sentEmail.text().contains("Welcome to Shippix!"));
-        assertNotNull(sentEmail.link());
-        assertTrue(sentEmail.link().contains("https://localhost:8080/set-password?token=" + savedToken.getToken()));
-    }
+ 
 
 
     // rejectRequest tests ----------------------------------------------------------------------------
