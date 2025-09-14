@@ -1,6 +1,6 @@
 package com.shippix.User_Management.Controller;
 
-import com.shippix.User_Management.DTO.PassChangeRequest;
+import com.shippix.User_Management.DTO.ResetPassRequest;
 import com.shippix.User_Management.Model.UserPrincipal;
 import com.shippix.User_Management.Service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/changePassword")
-    public ResponseEntity<String> changePasswordAuthenticated(@RequestBody PassChangeRequest request,
+    public ResponseEntity<String> changePasswordAuthenticated(@RequestBody ResetPassRequest request,
                                                               @AuthenticationPrincipal UserPrincipal currentUser) {
         if (!Objects.equals(request.newPassword(), request.repeatPassword())) {
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)

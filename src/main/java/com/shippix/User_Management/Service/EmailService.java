@@ -1,6 +1,6 @@
 package com.shippix.User_Management.Service;
 
-import com.shippix.User_Management.DTO.EmailBody;
+import com.shippix.User_Management.Email.EmailTemplate;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,19 +20,26 @@ public class EmailService {
         this.javaMailSender = javaMailSender;
     }
 
-    public void sendEmail(EmailBody emailBody) throws MessagingException {
-        MimeMessage message = javaMailSender.createMimeMessage();
+    public void sendEmail(EmailTemplate template) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setFrom(from);
+            helper.setTo(template.getTo());
+            helper.setSubject(template.getSubject());
 
-        helper.setFrom(from);
-        helper.setTo(emailBody.to());
-        helper.setSubject(emailBody.subject());
+            String htmlContent = "<p>" + template.getBody() + "</p>" +
+                    (template.getLink() != null ? "<p>Click <a href='" + template.getLink() + "'>here</a> to access your page.</p>" : "");
+            helper.setText(htmlContent, true);
 
-        String htmlContent = "<p>" + emailBody.text() + "</p>" +
-                (emailBody.link() != null ? "<p>Click <a href='" + emailBody.link() + "'>here</a> to access your page.</p>" : "");
-        helper.setText(htmlContent, true); // true = HTML
+            javaMailSender.send(message);
+            System.out.println("Email sent successfully to: " + template.getTo());
 
-        javaMailSender.send(message);
+        } catch (MessagingException e) {
+            System.err.println("Failed to send email to " + template.getTo() + ": " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Unexpected error while sending email to " + template.getTo() + ": " + e.getMessage());
+        }
     }
 }

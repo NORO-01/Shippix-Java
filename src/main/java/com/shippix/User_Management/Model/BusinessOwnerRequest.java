@@ -24,9 +24,15 @@ public class BusinessOwnerRequest {
     private String phoneNumber;
     private String nationalId;
     private String businessName;
-    private String businessType;
+
+    @Enumerated(EnumType.STRING)
+    private BusinessType businessType;
+
     private Double latitude;
     private Double longitude;
+
+    @Column(nullable = false)
+    private String password;
 
     @Enumerated(EnumType.STRING)
     private Status status = Status.PENDING;

@@ -1,45 +1,35 @@
 package com.shippix.User_Management.Service;
 
-import com.shippix.User_Management.DTO.NewPassRequest;
-import com.shippix.User_Management.Model.PasswordToken;
-import com.shippix.User_Management.Model.Users;
-import com.shippix.User_Management.Repo.PasswordTokenRepo;
-import com.shippix.User_Management.Repo.UserRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class PasswordService {
-
-    private final PasswordTokenRepo passwordTokenRepo;
-    private final UserRepo userRepo;
-    private final BCryptPasswordEncoder passwordEncoder;
-
-    @Transactional
-    public void setPassword(String token, NewPassRequest newPassword) {
-        PasswordToken pt = passwordTokenRepo.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired token"));
-
-        if (pt.getExpiryTime().before(new Date())) {
-            passwordTokenRepo.delete(pt);
-            throw new RuntimeException("Token expired");
-        }
-
-        if (!Objects.equals(newPassword.password(), newPassword.repeatPassword())) {
-            throw new RuntimeException("Passwords do not match");
-        }
-
-        Users user = pt.getUser();
-        user.setPassword(passwordEncoder.encode(newPassword.password()));
-        userRepo.save(user);
-
-        passwordTokenRepo.delete(pt);
-    }
+//
+//    private final PasswordTokenRepo passwordTokenRepo;
+//    private final UserRepo userRepo;
+//    private final BCryptPasswordEncoder passwordEncoder;
+//
+//    @Transactional
+//    public void setPassword(String token, NewPassRequest newPassword) {
+//        PasswordToken pt = passwordTokenRepo.findByToken(token)
+//                .orElseThrow(() -> new RuntimeException("Invalid or expired token"));
+//
+//        if (pt.getExpiryTime().before(new Date())) {
+//            passwordTokenRepo.delete(pt);
+//            throw new RuntimeException("Token expired");
+//        }
+//
+//        if (!Objects.equals(newPassword.password(), newPassword.repeatPassword())) {
+//            throw new RuntimeException("Passwords do not match");
+//        }
+//
+//        Users user = pt.getUser();
+//        user.setPassword(passwordEncoder.encode(newPassword.password()));
+//        userRepo.save(user);
+//
+//        passwordTokenRepo.delete(pt);
+//    }
 }
 

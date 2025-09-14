@@ -1,46 +1,40 @@
 package com.shippix.User_Management.Model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+
+@Entity
 @Builder
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
 public class PasswordToken {
+
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull
     private Integer otp;
-
-    private String token;
 
     @Column(nullable = false)
     private Date expiryTime;
 
-    @OneToOne
-    @JoinColumn(name = "user_id",unique = true)
-    private Users user;
+    private boolean verified = false;
 
-    @PrePersist
-    @PreUpdate
-    private void validate() {
-        boolean hasOtp = otp != null;
-        boolean hasToken = token != null;
-
-        if (hasOtp == hasToken) {
-            throw new IllegalStateException("Exactly one of OTP or Token must be set.");
-        }
-        
-        if (!hasOtp && !hasToken) {
-            throw new IllegalStateException("Either OTP or Token must be provided.");
-        }
+    public void setVerified(boolean verified) {
+        this.verified = verified;
     }
+
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true)
+    private Users user;
 }
+
 

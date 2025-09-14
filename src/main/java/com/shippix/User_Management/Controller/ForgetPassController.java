@@ -1,8 +1,11 @@
 package com.shippix.User_Management.Controller;
 
-import com.shippix.User_Management.DTO.NewPassRequest;
+import com.shippix.User_Management.DTO.ForgetPassRequest;
+import com.shippix.User_Management.Email.EmailTemplate;
+import com.shippix.User_Management.Email.EmailTemplateFactory;
+import com.shippix.User_Management.Model.PasswordToken;
+import com.shippix.User_Management.Service.EmailService;
 import com.shippix.User_Management.Service.ForgetPassService;
-import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,16 +22,18 @@ import java.util.Objects;
 public class ForgetPassController {
 
     private final ForgetPassService forgetPassService;
+    private final EmailService emailService;
+    private final EmailTemplateFactory emailTemplateFactory;
 
     @PostMapping("/verifyMail/{email}")
     public ResponseEntity<String> verifyEmail(@PathVariable String email) {
-        try {
-            forgetPassService.sendOtp(email);
-            return ResponseEntity.ok("OTP sent to email");
-        } catch (MessagingException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to send email");
-        }
+
+        PasswordToken token = forgetPassService.createOtp(email);
+        EmailTemplate template = emailTemplateFactory.createOtpEmail(email, token.getOtp());
+        emailService.sendEmail(template);
+
+        return ResponseEntity.ok("OTP sent to email");
+
     }
 
     @PostMapping("/verifyOtp/{email}/{otp}")
@@ -39,7 +44,7 @@ public class ForgetPassController {
 
     @PostMapping("/changePassword/{email}")
     public ResponseEntity<String> changePassword(@PathVariable String email,
-                                                 @RequestBody NewPassRequest newPassword) {
+                                                 @RequestBody ForgetPassRequest newPassword) {
         if (!Objects.equals(newPassword.password(), newPassword.repeatPassword())) {
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)
                     .body("Passwords do not match");
