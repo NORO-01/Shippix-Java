@@ -1,5 +1,11 @@
 package com.shippix;
 
+import com.shippix.User_Management.Model.PasswordToken;
+import com.shippix.User_Management.Model.Users;
+import com.shippix.User_Management.Repo.PasswordTokenRepo;
+import com.shippix.User_Management.Repo.UserRepo;
+import com.shippix.User_Management.Service.ForgetPassService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -8,372 +14,335 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import com.shippix.User_Management.DTO.NewPassRequest;
-import com.shippix.User_Management.Model.PasswordToken;
-import com.shippix.User_Management.Model.Users;
-import com.shippix.User_Management.Repo.PasswordTokenRepo;
-import com.shippix.User_Management.Repo.UserRepo;
-import com.shippix.User_Management.Service.PasswordService;
-import com.shippix.User_Management.Service.UserService;
-
 import java.util.Date;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PasswordServiceTest {
 
     @Mock
-    private PasswordTokenRepo passwordTokenRepo;
+    private UserRepo userRepo;
 
     @Mock
-    private UserRepo userRepo;
+    private PasswordTokenRepo tokenRepo;
 
     @Mock
     private BCryptPasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private PasswordService passwordService;
+    private ForgetPassService forgetPassService;
 
-    @InjectMocks
-    private UserService userService; 
+    private Users testUser;
+    private PasswordToken testToken;
 
-   // Test data
-    private final Users testUser;
-    private final PasswordToken validToken;
-    private final PasswordToken expiredToken;
+    @BeforeEach
+    void setUp() {
 
-    {
         testUser = new Users();
         testUser.setId(1L);
-        testUser.setUsername("username");
-        testUser.setEmail("testuser@example.com");
+        testUser.setEmail("test@example.com");
         testUser.setPassword("oldPassword");
-        testUser.setRole(Users.Role.ROLE_BUSINESS_OWNER);
 
-        validToken = PasswordToken.builder()
-                .token("valid-token")
+        testToken = PasswordToken.builder()
+                .id(1L)
+                .otp(123456)
+                .expiryTime(new Date(System.currentTimeMillis() + 70000)) // 70 seconds in future
                 .user(testUser)
-                .expiryTime(new Date(System.currentTimeMillis() + 100000)) // valid for 100 seconds
-                .build();
-
-        expiredToken = PasswordToken.builder()
-                .token("expired-token")
-                .user(testUser)
-                .expiryTime(new Date(System.currentTimeMillis() - 100000)) // expired 100 seconds ago
+                .verified(false)
                 .build();
     }
 
-
-    // Password test cases - using the actual NewPassRequest record
-    private final NewPassRequest validPassword = new NewPassRequest("ValidPass123!", "ValidPass123!");
-    private final NewPassRequest matchingPasswords = new NewPassRequest("newPassword123!", "newPassword123!");
-    private final NewPassRequest nonMatchingPasswords = new NewPassRequest("newPassword123!", "differentPassword");
-    private final NewPassRequest blankPassword = new NewPassRequest("", "");
-    private final NewPassRequest nullPassword = new NewPassRequest(null, null);
-    private final NewPassRequest shortPassword = new NewPassRequest("Short1!", "Short1!");
-    private final NewPassRequest noDigitPassword = new NewPassRequest("NoDigit!", "NoDigit!");
-    private final NewPassRequest noSpecialCharPassword = new NewPassRequest("NoSpecial123", "NoSpecial123");
-
-    // setPassword tests
-
     @Test
-    void setPassword_WithValidTokenAndValidPassword_ShouldUpdatePasswordAndDeleteToken() {
+    void testCreateOtp_UserFound_Success() {
         // Arrange
-        when(passwordTokenRepo.findByToken("valid-token")).thenReturn(Optional.of(validToken));
-        when(passwordEncoder.encode("ValidPass123!")).thenReturn("encodedPassword");
-        when(userRepo.save(testUser)).thenReturn(testUser);
-        doNothing().when(passwordTokenRepo).delete(validToken);
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        doNothing().when(tokenRepo).deleteByUser(testUser); // Fixed: use doNothing for void method
+        when(tokenRepo.save(any(PasswordToken.class))).thenAnswer(invocation -> {
+            PasswordToken token = invocation.getArgument(0);
+            return token;
+        });
 
         // Act
-        passwordService.setPassword("valid-token", validPassword);
+        PasswordToken result = forgetPassService.createOtp("test@example.com");
 
         // Assert
-        assertEquals("encodedPassword", testUser.getPassword());
-        verify(passwordTokenRepo, times(1)).findByToken("valid-token");
-        verify(passwordEncoder, times(1)).encode("ValidPass123!");
-        verify(userRepo, times(1)).save(testUser);
-        verify(passwordTokenRepo, times(1)).delete(validToken);
+        assertNotNull(result);
+        assertNotNull(result.getOtp());
+        assertTrue(result.getOtp() >= 100000 && result.getOtp() <= 999999);
+        assertNotNull(result.getExpiryTime());
+        assertEquals(testUser, result.getUser());
+
+        verify(userRepo, times(1)).findByEmail("test@example.com");
+        verify(tokenRepo, times(1)).deleteByUser(testUser);
+        verify(tokenRepo, times(1)).save(any(PasswordToken.class));
     }
 
     @Test
-    void setPassword_WithBlankPassword_ShouldThrowException() {
+    void testCreateOtp_UserNotFound_ThrowsException() {
         // Arrange
-        when(passwordTokenRepo.findByToken("valid-token")).thenReturn(Optional.of(validToken));
+        when(userRepo.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            passwordService.setPassword("valid-token", blankPassword);
+        assertThrows(UsernameNotFoundException.class, () -> {
+            forgetPassService.createOtp("nonexistent@example.com");
         });
 
-        assertEquals("Password must not be blank", exception.getMessage());
-        verify(passwordTokenRepo, times(1)).findByToken("valid-token");
-        verifyNoInteractions(passwordEncoder, userRepo);
-        verify(passwordTokenRepo, never()).delete(any());
-    }
-
-    @Test
-    void setPassword_WithNullPassword_ShouldThrowException() {
-        // Arrange
-        when(passwordTokenRepo.findByToken("valid-token")).thenReturn(Optional.of(validToken));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            passwordService.setPassword("valid-token", nullPassword);
-        });
-
-        assertEquals("Password must not be blank", exception.getMessage());
-        verify(passwordTokenRepo, times(1)).findByToken("valid-token");
-        verifyNoInteractions(passwordEncoder, userRepo);
-        verify(passwordTokenRepo, never()).delete(any());
-    }
-
-    @Test
-    void setPassword_WithShortPassword_ShouldThrowException() {
-        // Arrange
-        when(passwordTokenRepo.findByToken("valid-token")).thenReturn(Optional.of(validToken));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            passwordService.setPassword("valid-token", shortPassword);
-        });
-
-        assertEquals("Password must be at least 8 characters long", exception.getMessage());
-        verify(passwordTokenRepo, times(1)).findByToken("valid-token");
-        verifyNoInteractions(passwordEncoder, userRepo);
-        verify(passwordTokenRepo, never()).delete(any());
-    }
-
-    @Test
-    void setPassword_WithPasswordWithoutDigit_ShouldThrowException() {
-        // Arrange
-        when(passwordTokenRepo.findByToken("valid-token")).thenReturn(Optional.of(validToken));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            passwordService.setPassword("valid-token", noDigitPassword);
-        });
-
-        assertEquals("Password must contain at least one numeric digit", exception.getMessage());
-        verify(passwordTokenRepo, times(1)).findByToken("valid-token");
-        verifyNoInteractions(passwordEncoder, userRepo);
-        verify(passwordTokenRepo, never()).delete(any());
-    }
-
-    @Test
-    void setPassword_WithPasswordWithoutSpecialChar_ShouldThrowException() {
-        // Arrange
-        when(passwordTokenRepo.findByToken("valid-token")).thenReturn(Optional.of(validToken));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            passwordService.setPassword("valid-token", noSpecialCharPassword);
-        });
-
-        assertEquals("Password must contain at least one special character", exception.getMessage());
-        verify(passwordTokenRepo, times(1)).findByToken("valid-token");
-        verifyNoInteractions(passwordEncoder, userRepo);
-        verify(passwordTokenRepo, never()).delete(any());
-    }
-
-    @Test
-    void setPassword_WithInvalidToken_ShouldThrowException() {
-        // Arrange
-        when(passwordTokenRepo.findByToken("invalid-token")).thenReturn(Optional.empty());
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            passwordService.setPassword("invalid-token", validPassword);
-        });
-
-        assertEquals("Invalid or expired token", exception.getMessage());
-        verify(passwordTokenRepo, times(1)).findByToken("invalid-token");
-        verifyNoInteractions(passwordEncoder, userRepo);
-        verify(passwordTokenRepo, never()).delete(any());
-    }
-
-    @Test
-    void setPassword_WithExpiredToken_ShouldDeleteTokenAndThrowException() {
-        // Arrange
-        when(passwordTokenRepo.findByToken("expired-token")).thenReturn(Optional.of(expiredToken));
-        doNothing().when(passwordTokenRepo).delete(expiredToken);
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            passwordService.setPassword("expired-token", validPassword);
-        });
-
-        assertEquals("Token expired", exception.getMessage());
-        verify(passwordTokenRepo, times(1)).findByToken("expired-token");
-        verify(passwordTokenRepo, times(1)).delete(expiredToken);
-        verifyNoInteractions(passwordEncoder, userRepo);
-    }
-
-    @Test
-    void setPassword_WithNonMatchingPasswords_ShouldThrowException() {
-        // Arrange
-        when(passwordTokenRepo.findByToken("valid-token")).thenReturn(Optional.of(validToken));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            passwordService.setPassword("valid-token", nonMatchingPasswords);
-        });
-
-        assertEquals("Passwords do not match", exception.getMessage());
-        verify(passwordTokenRepo, times(1)).findByToken("valid-token");
-        verifyNoInteractions(passwordEncoder, userRepo);
-        verify(passwordTokenRepo, never()).delete(any());
-    }
-
-    @Test
-    void setPassword_ShouldEncodePasswordBeforeSaving() {
-        // Arrange
-        when(passwordTokenRepo.findByToken("valid-token")).thenReturn(Optional.of(validToken));
-        when(passwordEncoder.encode("newPassword123!")).thenReturn("encodedNewPassword");
-        when(userRepo.save(testUser)).thenReturn(testUser);
-        doNothing().when(passwordTokenRepo).delete(validToken);
-
-        // Act
-        passwordService.setPassword("valid-token", matchingPasswords);
-
-        // Assert
-        verify(passwordEncoder, times(1)).encode("newPassword123!");
-        assertEquals("encodedNewPassword", testUser.getPassword());
-    }
-
-    @Test
-    void setPassword_WithValidPasswordContainingMultipleSpecialChars_ShouldWork() {
-        // Test multiple special characters
-        NewPassRequest multipleSpecialChars = new NewPassRequest("Pass123@#$", "Pass123@#$");
-        
-        when(passwordTokenRepo.findByToken("valid-token")).thenReturn(Optional.of(validToken));
-        when(passwordEncoder.encode("Pass123@#$")).thenReturn("encodedPassword");
-        when(userRepo.save(testUser)).thenReturn(testUser);
-        doNothing().when(passwordTokenRepo).delete(validToken);
-
-        // Act
-        passwordService.setPassword("valid-token", multipleSpecialChars);
-
-        // Assert
-        verify(passwordEncoder, times(1)).encode("Pass123@#$");
-    }
-
-    // changePassword tests with password validation
-
-    @Test
-    void changePassword_WithValidPassword_ShouldUpdatePassword() {
-        // Arrange
-        when(userRepo.findByEmail("user@example.com")).thenReturn(Optional.of(testUser));
-        when(passwordEncoder.encode("ValidPass123!")).thenReturn("encodedNewPassword");
-        when(userRepo.save(testUser)).thenReturn(testUser);
-
-        // Act
-        userService.changePassword("user@example.com", "ValidPass123!", "oldPassword");
-
-        // Assert
-        assertEquals("encodedNewPassword", testUser.getPassword());
-        verify(userRepo, times(1)).findByEmail("user@example.com");
-        verify(passwordEncoder, times(1)).encode("ValidPass123!");
-        verify(userRepo, times(1)).save(testUser);
-    }
-
-    @Test
-    void changePassword_WithBlankPassword_ShouldThrowException() {
-        // Arrange
-        when(userRepo.findByEmail("user@example.com")).thenReturn(Optional.of(testUser));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.changePassword("user@example.com", "", "oldPassword");
-        });
-
-        assertEquals("Password must not be blank", exception.getMessage());
-        verify(userRepo, times(1)).findByEmail("user@example.com");
-        verifyNoInteractions(passwordEncoder);
-        verify(userRepo, never()).save(any());
-    }
-
-    @Test
-    void changePassword_WithNullPassword_ShouldThrowException() {
-        // Arrange
-        when(userRepo.findByEmail("user@example.com")).thenReturn(Optional.of(testUser));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.changePassword("user@example.com", "ValidPass123!", null);
-        });
-
-        assertEquals("Old password is incorrect", exception.getMessage());
-        verify(userRepo, times(1)).findByEmail("user@example.com");
-        verifyNoInteractions(passwordEncoder);
-        verify(userRepo, never()).save(any());
-    }
-
-    @Test
-    void changePassword_WithShortPassword_ShouldThrowException() {
-        // Arrange
-        when(userRepo.findByEmail("user@example.com")).thenReturn(Optional.of(testUser));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.changePassword("user@example.com", "Short1!", "oldPassword");
-        });
-
-        assertEquals("Password must be at least 8 characters long", exception.getMessage());
-        verify(userRepo, times(1)).findByEmail("user@example.com");
-        verifyNoInteractions(passwordEncoder);
-        verify(userRepo, never()).save(any());
-    }
-
-    @Test
-    void changePassword_WithPasswordWithoutDigit_ShouldThrowException() {
-        // Arrange
-        when(userRepo.findByEmail("user@example.com")).thenReturn(Optional.of(testUser));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.changePassword("user@example.com", "NoDigit!", "oldPassword");
-        });
-
-        assertEquals("Password must contain at least one numeric digit", exception.getMessage());
-        verify(userRepo, times(1)).findByEmail("user@example.com");
-        verifyNoInteractions(passwordEncoder);
-        verify(userRepo, never()).save(any());
-    }
-
-    @Test
-    void changePassword_WithPasswordWithoutSpecialChar_ShouldThrowException() {
-        // Arrange
-        when(userRepo.findByEmail("user@example.com")).thenReturn(Optional.of(testUser));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.changePassword("user@example.com", "NoSpecial123", "oldPassword");
-        });
-
-        assertEquals("Password must contain at least one special character", exception.getMessage());
-        verify(userRepo, times(1)).findByEmail("user@example.com");
-        verifyNoInteractions(passwordEncoder);
-        verify(userRepo, never()).save(any());
-    }
-
-    @Test
-    void changePassword_WithNonExistentEmail_ShouldThrowException() {
-        // Act & Assert
-        UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class, () -> {
-            userService.changePassword("nonexistent@example.com", "ValidPass123!", "oldPassword");
-        });
-
-        assertEquals("User not found", exception.getMessage());
         verify(userRepo, times(1)).findByEmail("nonexistent@example.com");
-        verifyNoInteractions(passwordEncoder);
-        verify(userRepo, never()).save(any());
+        verify(tokenRepo, never()).deleteByUser(any());
+        verify(tokenRepo, never()).save(any());
     }
 
+    @Test
+    void testVerifyOtp_ValidOtp_Success() {
+        // Arrange
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(tokenRepo.findByOtpAndUser(123456, testUser)).thenReturn(Optional.of(testToken));
+
+        // Act
+        assertDoesNotThrow(() -> forgetPassService.verifyOtp("test@example.com", 123456));
+
+        // Assert
+        verify(userRepo, times(1)).findByEmail("test@example.com");
+        verify(tokenRepo, times(1)).findByOtpAndUser(123456, testUser);
+        verify(tokenRepo, times(1)).save(testToken);
+        assertTrue(testToken.isVerified());
+    }
+
+    @Test
+    void testVerifyOtp_UserNotFound_ThrowsException() {
+        // Arrange
+        when(userRepo.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(UsernameNotFoundException.class, () -> {
+            forgetPassService.verifyOtp("nonexistent@example.com", 123456);
+        });
+
+        verify(userRepo, times(1)).findByEmail("nonexistent@example.com");
+        verify(tokenRepo, never()).findByOtpAndUser(anyInt(), any());
+    }
+
+    @Test
+    void testVerifyOtp_InvalidOtp_ThrowsException() {
+        // Arrange
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(tokenRepo.findByOtpAndUser(999999, testUser)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            forgetPassService.verifyOtp("test@example.com", 999999);
+        });
+
+        assertEquals("Invalid OTP", exception.getMessage());
+        verify(userRepo, times(1)).findByEmail("test@example.com");
+        verify(tokenRepo, times(1)).findByOtpAndUser(999999, testUser);
+    }
+
+    @Test
+    void testVerifyOtp_ExpiredOtp_ThrowsException() {
+        // Arrange
+        PasswordToken expiredToken = PasswordToken.builder()
+                .id(1L)
+                .otp(123456)
+                .expiryTime(new Date(System.currentTimeMillis() - 1000)) // 1 second in past
+                .user(testUser)
+                .build();
+
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(tokenRepo.findByOtpAndUser(123456, testUser)).thenReturn(Optional.of(expiredToken));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            forgetPassService.verifyOtp("test@example.com", 123456);
+        });
+
+        assertEquals("OTP expired", exception.getMessage());
+        verify(tokenRepo, times(1)).deleteById(1L);
+        verify(tokenRepo, never()).save(any());
+    }
+
+    @Test
+    void testChangePassword_ValidOtp_Success() {
+        // Arrange
+        testToken.setVerified(true);
+        String newPassword = "newSecurePassword123";
+        String encodedPassword = "encodedNewPassword";
+
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(tokenRepo.findByUser(testUser)).thenReturn(Optional.of(testToken));
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedPassword);
+        when(userRepo.save(testUser)).thenReturn(testUser);
+
+        // Act
+        assertDoesNotThrow(() -> forgetPassService.changePassword("test@example.com", newPassword));
+
+        // Assert
+        assertEquals(encodedPassword, testUser.getPassword());
+        verify(userRepo, times(1)).findByEmail("test@example.com");
+        verify(tokenRepo, times(1)).findByUser(testUser);
+        verify(passwordEncoder, times(1)).encode(newPassword);
+        verify(userRepo, times(1)).save(testUser);
+        verify(tokenRepo, times(1)).delete(testToken);
+    }
+
+    @Test
+    void testChangePassword_UserNotFound_ThrowsException() {
+        // Arrange
+        when(userRepo.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(UsernameNotFoundException.class, () -> {
+            forgetPassService.changePassword("nonexistent@example.com", "newPassword");
+        });
+
+        verify(userRepo, times(1)).findByEmail("nonexistent@example.com");
+        verify(tokenRepo, never()).findByUser(any());
+    }
+
+    @Test
+    void testChangePassword_NoOtpFound_ThrowsException() {
+        // Arrange
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(tokenRepo.findByUser(testUser)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            forgetPassService.changePassword("test@example.com", "newPassword");
+        });
+
+        assertEquals("No OTP found", exception.getMessage());
+        verify(userRepo, times(1)).findByEmail("test@example.com");
+        verify(tokenRepo, times(1)).findByUser(testUser);
+    }
+
+    @Test
+    void testChangePassword_OtpNotVerified_ThrowsException() {
+        // Arrange
+        testToken.setVerified(false); // Explicitly set to false
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(tokenRepo.findByUser(testUser)).thenReturn(Optional.of(testToken));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            forgetPassService.changePassword("test@example.com", "newPassword");
+        });
+
+        assertEquals("OTP not verified", exception.getMessage());
+        verify(userRepo, times(1)).findByEmail("test@example.com");
+        verify(tokenRepo, times(1)).findByUser(testUser);
+        verify(passwordEncoder, never()).encode(any());
+    }
+
+
+    @Test
+    void testGenerateOtp_ValidRange() {
+        // Since generateOtp is private, we test it indirectly through createOtp
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        doNothing().when(tokenRepo).deleteByUser(testUser);
+        when(tokenRepo.save(any(PasswordToken.class))).thenAnswer(invocation -> {
+            PasswordToken token = invocation.getArgument(0);
+            return token;
+        });
+
+        // Act
+        PasswordToken result = forgetPassService.createOtp("test@example.com");
+
+        // Assert
+        assertNotNull(result.getOtp());
+        assertTrue(result.getOtp() >= 100000, "OTP should be at least 100000");
+        assertTrue(result.getOtp() <= 999999, "OTP should be at most 999999");
+    }
+
+    @Test
+    void testIntegration_CompletePasswordResetFlow() {
+        // This test simulates the complete flow
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        doNothing().when(tokenRepo).deleteByUser(testUser);
+        
+        // Mock OTP creation
+        when(tokenRepo.save(any(PasswordToken.class))).thenAnswer(invocation -> {
+            PasswordToken token = invocation.getArgument(0);
+        //    token.setId(1L);
+            token.setVerified(false);
+            return token;
+        });
+        
+        // Mock OTP verification
+        when(tokenRepo.findByOtpAndUser(anyInt(), eq(testUser))).thenAnswer(invocation -> {
+            Integer otp = invocation.getArgument(0);
+            PasswordToken token = PasswordToken.builder()
+                    .id(1L)
+                    .otp(otp)
+                    .expiryTime(new Date(System.currentTimeMillis() + 70000))
+                    .user(testUser)
+                    .verified(false)
+                    .build();
+            return Optional.of(token);
+        });
+        
+        // Mock password change
+        when(tokenRepo.findByUser(testUser)).thenAnswer(invocation -> 
+            Optional.of(PasswordToken.builder()
+                    .id(1L)
+                    .otp(123456)
+                    .expiryTime(new Date(System.currentTimeMillis() + 70000))
+                    .user(testUser)
+                    .verified(true)
+                    .build())
+        );
+        when(passwordEncoder.encode("newPassword123")).thenReturn("encodedPassword");
+        when(userRepo.save(testUser)).thenReturn(testUser);
+
+        // Act - Complete password reset flow
+        PasswordToken createdToken = forgetPassService.createOtp("test@example.com");
+        assertDoesNotThrow(() -> forgetPassService.verifyOtp("test@example.com", createdToken.getOtp()));
+        assertDoesNotThrow(() -> forgetPassService.changePassword("test@example.com", "newPassword123"));
+
+        // Verify all interactions
+        verify(userRepo, times(3)).findByEmail("test@example.com");
+        verify(tokenRepo, times(1)).deleteByUser(testUser);
+        verify(tokenRepo, times(2)).save(any(PasswordToken.class));
+        verify(tokenRepo, times(1)).findByOtpAndUser(anyInt(), eq(testUser));
+        verify(tokenRepo, times(1)).findByUser(testUser);
+        verify(passwordEncoder, times(1)).encode("newPassword123");
+        verify(userRepo, times(1)).save(testUser);
+        verify(tokenRepo, times(1)).delete(any(PasswordToken.class));
+    }
+
+    @Test
+    void testCreateOtp_DeletesExistingTokens() {
+        // Arrange
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        doNothing().when(tokenRepo).deleteByUser(testUser);
+        when(tokenRepo.save(any(PasswordToken.class))).thenAnswer(invocation -> {
+            PasswordToken token = invocation.getArgument(0);
+            return token;
+        });
+
+        // Act
+        forgetPassService.createOtp("test@example.com");
+
+        // Assert - Verify that existing tokens are deleted before creating new one
+        verify(tokenRepo, times(1)).deleteByUser(testUser);
+    }
+
+    @Test
+    void testVerifyOtp_SavesVerifiedToken() {
+        // Arrange
+        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+        when(tokenRepo.findByOtpAndUser(123456, testUser)).thenReturn(Optional.of(testToken));
+
+        // Act
+        forgetPassService.verifyOtp("test@example.com", 123456);
+
+        // Assert - Verify that the token is saved after being marked as verified
+        verify(tokenRepo, times(1)).save(testToken);
+        assertTrue(testToken.isVerified());
+    }
 }
-
-
-// i think the issue is UserService uses BCryptPasswordEncoder, which not matching passwords correctly

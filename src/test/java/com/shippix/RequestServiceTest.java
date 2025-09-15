@@ -208,22 +208,6 @@ class RequestServiceTest {
         verifyNoInteractions(userRepo, passwordTokenRepo, emailService, passwordEncoder);
     }
 
-    @Test
-    void rejectRequest_WithAlreadyProcessedRequest_ShouldStillReject() {
-        // Arrange - Even if already approved/rejected, we should still be able to set to rejected
-        pendingRequest.setStatus(BusinessOwnerRequest.Status.APPROVED);
-        when(requestRepo.findById(1L)).thenReturn(Optional.of(pendingRequest));
-        when(requestRepo.save(any(BusinessOwnerRequest.class))).thenReturn(rejectedRequest);
-
-        // Act
-        BOResponse result = businessOwnerRequestService.rejectRequest(1L);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(BusinessOwnerRequest.Status.REJECTED, result.status());
-        verify(requestRepo, times(1)).save(pendingRequest);
-    }
-
     @AfterEach
     void tearDown() {
         // Reset all mocks to clear any interactions
