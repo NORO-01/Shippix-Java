@@ -3,6 +3,7 @@ package com.shippix.User_Management.Controller;
 import com.shippix.User_Management.DTO.ResetPassRequest;
 import com.shippix.User_Management.Model.UserPrincipal;
 import com.shippix.User_Management.Service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/changePassword")
-    public ResponseEntity<String> changePasswordAuthenticated(@RequestBody ResetPassRequest request,
+    public ResponseEntity<String> changePasswordAuthenticated( @Valid @RequestBody ResetPassRequest request,
                                                               @AuthenticationPrincipal UserPrincipal currentUser) {
         if (!Objects.equals(request.newPassword(), request.repeatPassword())) {
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)

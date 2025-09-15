@@ -39,8 +39,7 @@ public record BORequest(
         @DecimalMax(value = "180.0", inclusive = true, message = "Longitude must be <= 180")
         Double longitude,
 
-        @NotNull(message = "Business type must not be blank")
-   //     @Pattern(regexp = "^\\S.*", message = "Business type first character cannot be space")
+        @NotNull(message = "Business type must not be null")
         BusinessType businessType,
 
         @NotBlank(message = "Password must not be blank")
@@ -52,9 +51,10 @@ public record BORequest(
         @NotBlank(message = "Confirm password must not be blank")
         String confirmPassword
 ) {
-    public boolean isPasswordMatch() {
-        return password != null && password.equals(confirmPassword);
-    }
+        @AssertTrue(message = "Password and confirm password must match")
+        public boolean isPasswordMatching() {
+                return password != null && password.equals(confirmPassword);
+        }
 }
 
 

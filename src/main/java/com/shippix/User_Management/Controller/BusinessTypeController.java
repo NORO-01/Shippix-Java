@@ -5,18 +5,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/business-types")
 public class BusinessTypeController {
 
+    public record BusinessTypeDTO(String value, String displayName) {}
+
     @GetMapping
-    public List<BusinessTypeInfo> getAllBusinessTypes() {
-        return List.of(BusinessType.values()).stream()
-                .map(type -> new BusinessTypeInfo(type.name(), type.getDisplayName()))
+    public List<BusinessTypeDTO> list() {
+        return Arrays.stream(BusinessType.values())
+                .map(bt -> new BusinessTypeDTO(bt.name(), bt.getDisplayName()))
                 .toList();
     }
-
-    public record BusinessTypeInfo(String value, String displayName) {}
 }

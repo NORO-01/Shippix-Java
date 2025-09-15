@@ -6,7 +6,6 @@ import com.shippix.User_Management.Model.BusinessOwner;
 import com.shippix.User_Management.Model.BusinessOwnerRequest;
 import com.shippix.User_Management.Model.Users;
 import com.shippix.User_Management.Repo.BusinessOwnerRequestRepo;
-import com.shippix.User_Management.Repo.PasswordTokenRepo;
 import com.shippix.User_Management.Repo.UserRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,8 +20,6 @@ public class BusinessOwnerRequestService {
 
     private final BusinessOwnerRequestRepo requestRepo;
     private final UserRepo userRepo;
-    private final PasswordTokenRepo passwordTokenRepo;
-    private final EmailService emailService;
     private final BCryptPasswordEncoder passwordEncoder;
 
 
@@ -30,6 +27,17 @@ public class BusinessOwnerRequestService {
     public BOResponse submitRequest(BORequest dto) {
         if (!dto.password().equals(dto.confirmPassword())) {
             throw new IllegalArgumentException("Password and confirm password do not match");
+        }
+        if (userRepo.findByEmail(dto.email()).isPresent()) {
+            throw new IllegalArgumentException("An account with this email already exists");
+        }
+        if (requestRepo.findByStatus(BusinessOwnerRequest.Status.PENDING).stream()
+                .anyMatch(r -> r.getEmail().equalsIgnoreCase(dto.email()))) {
+            throw new IllegalArgumentException("A pending request already exists for this email");
+        }
+        if (requestRepo.findByStatus(BusinessOwnerRequest.Status.APPROVED).stream()
+                .anyMatch(r -> r.getEmail().equalsIgnoreCase(dto.email()))) {
+            throw new IllegalArgumentException("This email has already been approved");
         }
 
         BusinessOwnerRequest request = new BusinessOwnerRequest();
@@ -71,15 +79,20 @@ public class BusinessOwnerRequestService {
         BusinessOwnerRequest request = requestRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
+
         if (request.getStatus() != BusinessOwnerRequest.Status.PENDING) {
             throw new RuntimeException("Request already processed");
+        }
+
+        if (userRepo.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalStateException("User already exists with this email");
         }
 
         request.setStatus(BusinessOwnerRequest.Status.APPROVED);
         requestRepo.save(request);
 
         BusinessOwner bo = new BusinessOwner();
-        bo.setUsername(request.getEmail());
+        bo.setUsername(request.getName());
         bo.setEmail(request.getEmail());
         bo.setPhoneNumber(request.getPhoneNumber());
         bo.setRole(Users.Role.ROLE_BUSINESS_OWNER);
@@ -148,6 +161,10 @@ public class BusinessOwnerRequestService {
     public BOResponse rejectRequest(Long requestId) {
         BusinessOwnerRequest request = requestRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (request.getStatus() != BusinessOwnerRequest.Status.PENDING) {
+            throw new RuntimeException("Request already processed");
+        }
 
         request.setStatus(BusinessOwnerRequest.Status.REJECTED);
         BusinessOwnerRequest saved = requestRepo.save(request);
