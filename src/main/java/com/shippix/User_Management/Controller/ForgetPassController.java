@@ -6,6 +6,7 @@ import com.shippix.User_Management.Email.EmailTemplateFactory;
 import com.shippix.User_Management.Model.PasswordToken;
 import com.shippix.User_Management.Service.EmailService;
 import com.shippix.User_Management.Service.ForgetPassService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +45,7 @@ public class ForgetPassController {
 
     @PostMapping("/changePassword/{email}")
     public ResponseEntity<String> changePassword(@PathVariable String email,
-                                                 @RequestBody ForgetPassRequest newPassword) {
+                                                 @Valid @RequestBody ForgetPassRequest newPassword) {
         if (!Objects.equals(newPassword.password(), newPassword.repeatPassword())) {
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)
                     .body("Passwords do not match");
