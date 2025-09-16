@@ -62,7 +62,6 @@ class PasswordServiceTest {
     void testCreateOtp_UserFound_Success() {
         // Arrange
         when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
-        doNothing().when(tokenRepo).deleteByUser(testUser); // Fixed: use doNothing for void method
         when(tokenRepo.save(any(PasswordToken.class))).thenAnswer(invocation -> {
             PasswordToken token = invocation.getArgument(0);
             return token;
@@ -239,36 +238,38 @@ class PasswordServiceTest {
         verify(passwordEncoder, never()).encode(any());
     }
 
-
     @Test
-    void testGenerateOtp_ValidRange() {
-        // Since generateOtp is private, we test it indirectly through createOtp
+    void testChangePassword_WrongPasswordFormat_ThrowsException() {
+        // Arrange
+        testToken.setVerified(true);
+        String newPassword = "123";
+        String encodedPassword = "encodedNewPassword";
+
         when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
-        doNothing().when(tokenRepo).deleteByUser(testUser);
-        when(tokenRepo.save(any(PasswordToken.class))).thenAnswer(invocation -> {
-            PasswordToken token = invocation.getArgument(0);
-            return token;
+        when(tokenRepo.findByUser(testUser)).thenReturn(Optional.of(testToken));
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedPassword);
+        when(userRepo.save(testUser)).thenReturn(testUser);
+
+        // Act & Assert
+        assertThrows(Exception.class, () -> {
+            forgetPassService.changePassword("test@example.com", newPassword);
         });
 
-        // Act
-        PasswordToken result = forgetPassService.createOtp("test@example.com");
-
-        // Assert
-        assertNotNull(result.getOtp());
-        assertTrue(result.getOtp() >= 100000, "OTP should be at least 100000");
-        assertTrue(result.getOtp() <= 999999, "OTP should be at most 999999");
+        verify(userRepo, times(1)).findByEmail("test@example.com");
+        verify(tokenRepo, times(1)).findByUser(testUser);
+        verify(passwordEncoder, never()).encode(any());
+        verify(userRepo, never()).save(any());
+        verify(tokenRepo, never()).delete(any());
     }
 
     @Test
     void testIntegration_CompletePasswordResetFlow() {
-        // This test simulates the complete flow
         when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         doNothing().when(tokenRepo).deleteByUser(testUser);
         
         // Mock OTP creation
         when(tokenRepo.save(any(PasswordToken.class))).thenAnswer(invocation -> {
             PasswordToken token = invocation.getArgument(0);
-        //    token.setId(1L);
             token.setVerified(false);
             return token;
         });

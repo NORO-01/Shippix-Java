@@ -33,8 +33,6 @@ class EmailServiceTest {
     @Captor
     private ArgumentCaptor<MimeMessage> mimeMessageCaptor;
 
-    private String fromEmail = "sender@example.com";
-
     @BeforeEach
     void setUp() throws Exception {
         // Set up the EmailTemplate mock with valid defaults
@@ -49,7 +47,7 @@ class EmailServiceTest {
         // Use reflection to set the 'from' field in EmailService
         java.lang.reflect.Field fromField = EmailService.class.getDeclaredField("from");
         fromField.setAccessible(true);
-        fromField.set(emailService, fromEmail);
+        fromField.set(emailService, "sender@example.com");
     }
 
     @Test

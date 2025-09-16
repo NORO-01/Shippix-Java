@@ -4,17 +4,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import com.shippix.User_Management.DTO.BOResponse;
-import com.shippix.User_Management.Email.EmailTemplate;
 import com.shippix.User_Management.Model.BusinessOwner;
 import com.shippix.User_Management.Model.BusinessOwnerRequest;
-import com.shippix.User_Management.Model.PasswordToken;
 import com.shippix.User_Management.Model.Users;
 import com.shippix.User_Management.Repo.BusinessOwnerRequestRepo;
 import com.shippix.User_Management.Repo.PasswordTokenRepo;
@@ -63,7 +59,7 @@ class RequestServiceTest {
         pendingRequest.setEmail("mayafouad2004@gmail.com");
         pendingRequest.setPhoneNumber("201234567890");
         pendingRequest.setNationalId("12345678901234");
-        pendingRequest.setBusinessName("Maya Business");
+        pendingRequest.setBusinessName("Maya's Business");
         pendingRequest.setBusinessType(com.shippix.User_Management.Model.BusinessType.RETAIL_STORE);
         pendingRequest.setLatitude(40.7128);
         pendingRequest.setLongitude(-74.0060);
@@ -103,6 +99,7 @@ class RequestServiceTest {
         assertEquals(pendingRequest.getLatitude(), result.getLatitude());
         assertEquals(pendingRequest.getLongitude(), result.getLongitude());
         assertEquals(Users.Role.ROLE_BUSINESS_OWNER, result.getRole());
+        assertTrue(pendingRequest.getStatus() == BusinessOwnerRequest.Status.APPROVED);
 
         // Verify interactions
         verify(requestRepo, times(1)).findById(1L);
@@ -189,7 +186,8 @@ class RequestServiceTest {
         // Act
         businessOwnerRequestService.rejectRequest(1L);
 
-        // Assert - Status is verified in the mock above
+        // Assert 
+        assertTrue(pendingRequest.getStatus() == BusinessOwnerRequest.Status.REJECTED);
         verify(requestRepo, times(1)).save(pendingRequest);
     }
 

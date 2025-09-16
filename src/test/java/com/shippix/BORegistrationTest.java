@@ -3,21 +3,15 @@ package com.shippix;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.shippix.User_Management.DTO.BORequest;
 import com.shippix.User_Management.DTO.BOResponse;
-import com.shippix.User_Management.Email.EmailTemplate;
-import com.shippix.User_Management.Email.WelcomeEmailTemplate;
-import com.shippix.User_Management.Model.BusinessOwner;
 import com.shippix.User_Management.Model.BusinessOwnerRequest;
 import com.shippix.User_Management.Model.BusinessType;
-import com.shippix.User_Management.Model.PasswordToken;
 import com.shippix.User_Management.Repo.BusinessOwnerRequestRepo;
 import com.shippix.User_Management.Repo.PasswordTokenRepo;
 import com.shippix.User_Management.Repo.UserRepo;
@@ -26,10 +20,7 @@ import com.shippix.User_Management.Service.EmailService;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-
-import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class BORegistrationTest {
@@ -57,7 +48,7 @@ class BORegistrationTest {
     @BeforeEach
     void setUp() {
         validRequestDto = new BORequest(
-            "John's Business",             
+            "John Business",             
             "John Doe",                    
             "john.doe@example.com",       
             "12345678901234",              
@@ -76,7 +67,7 @@ class BORegistrationTest {
         savedRequest.setEmail("john.doe@example.com");
         savedRequest.setPhoneNumber("1234567890");
         savedRequest.setNationalId("12345678901234");
-        savedRequest.setBusinessName("John's Business");
+        savedRequest.setBusinessName("John Business");
         savedRequest.setBusinessType(BusinessType.RETAIL_STORE);
         savedRequest.setLatitude(40.7128);
         savedRequest.setLongitude(-74.0060);
@@ -108,7 +99,6 @@ class BORegistrationTest {
         // Arrange
         when(requestRepo.save(any(BusinessOwnerRequest.class))).thenAnswer(invocation -> {
             BusinessOwnerRequest request = invocation.getArgument(0);
-            request.setId(1L);
             return request;
         });
 
@@ -148,7 +138,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-       // verifyNoInteractions(requestRepo);
     }
 
     // T2: Business Name – Special characters are not allowed.
@@ -168,7 +157,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-      //  verifyNoInteractions(requestRepo);
     }
 
     // T3: Business Name – First character cannot have space.
@@ -188,7 +176,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-    //    verifyNoInteractions(requestRepo);
     }
 
     // T4: Owner Name – Must not be blank.
@@ -208,7 +195,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-     //   verifyNoInteractions(requestRepo);
     }
 
     // T5: Owner Name – Numbers are not allowed.
@@ -228,7 +214,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-   //     verifyNoInteractions(requestRepo);
     }
 
     // T6: Owner Name – Special characters are not allowed.
@@ -248,7 +233,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-    //    verifyNoInteractions(requestRepo);
     }
 
     // T7: Owner Name – First character cannot have space.
@@ -268,7 +252,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-   //     verifyNoInteractions(requestRepo);
     }
 
     // T8: Email – Must not be blank.
@@ -288,7 +271,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-    //    verifyNoInteractions(requestRepo);
     }
 
     // T9: Email – Must be in valid format.
@@ -308,7 +290,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-    //    verifyNoInteractions(requestRepo);
     }
 
     // T10: Email – First character cannot have space.
@@ -328,7 +309,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-     //   verifyNoInteractions(requestRepo);
     }
 
     // T11: Phone Number – Must not be blank.
@@ -348,7 +328,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-    //    verifyNoInteractions(requestRepo);
     }
 
     // T12: Phone Number – Special characters are not allowed.
@@ -368,7 +347,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-    //    verifyNoInteractions(requestRepo);
     }
 
     // T13: Phone Number – Characters are not allowed.
@@ -388,7 +366,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-     //   verifyNoInteractions(requestRepo);
     }
 
     // T14: Phone Number – First character cannot have space.
@@ -408,7 +385,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-     //   verifyNoInteractions(requestRepo);
     }
 
     // T24: National ID – Must not be blank.
@@ -427,9 +403,7 @@ class BORegistrationTest {
             "P@ssw0rd123!"          
         );
 
-        assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-     //   verifyNoInteractions(requestRepo);
-        
+        assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });        
     }
 
     // T25: National ID – Must be exactly 14 digits.
@@ -449,7 +423,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-    //    verifyNoInteractions(requestRepo);
     }
 
     // T26: National ID – Special characters are not allowed.
@@ -469,7 +442,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-   //      verifyNoInteractions(requestRepo);
     }
 
     // T27: Business Type – Must not be blank.
@@ -489,7 +461,6 @@ class BORegistrationTest {
         );
 
         assertThrows(Exception.class, () -> { businessOwnerRequestService.submitRequest(invalidRequest); });
-     //   verifyNoInteractions(requestRepo);
     }
 
 
