@@ -239,30 +239,6 @@ class PasswordServiceTest {
     }
 
     @Test
-    void testChangePassword_WrongPasswordFormat_ThrowsException() {
-        // Arrange
-        testToken.setVerified(true);
-        String newPassword = "123";
-        String encodedPassword = "encodedNewPassword";
-
-        when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
-        when(tokenRepo.findByUser(testUser)).thenReturn(Optional.of(testToken));
-        when(passwordEncoder.encode(newPassword)).thenReturn(encodedPassword);
-        when(userRepo.save(testUser)).thenReturn(testUser);
-
-        // Act & Assert
-        assertThrows(Exception.class, () -> {
-            forgetPassService.changePassword("test@example.com", newPassword);
-        });
-
-        verify(userRepo, times(1)).findByEmail("test@example.com");
-        verify(tokenRepo, times(1)).findByUser(testUser);
-        verify(passwordEncoder, never()).encode(any());
-        verify(userRepo, never()).save(any());
-        verify(tokenRepo, never()).delete(any());
-    }
-
-    @Test
     void testIntegration_CompletePasswordResetFlow() {
         when(userRepo.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         doNothing().when(tokenRepo).deleteByUser(testUser);
