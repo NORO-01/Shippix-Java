@@ -69,6 +69,7 @@ public class JwtService {
         return (userName.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
+
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
@@ -77,4 +78,8 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
+//    FOR INTROSPECTION
+    public Date getExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
 }

@@ -6,7 +6,6 @@ import com.shippix.User_Management.Email.EmailTemplateFactory;
 import com.shippix.User_Management.Service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,10 +20,8 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final JwtService jwtService;
     private final BusinessOwnerRequestService businessOwnerRequestService;
-    private final PasswordService passwordService;
     private final EmailService emailService;
     private final EmailTemplateFactory emailTemplateFactory;
-
     // ---------------- LOGIN ----------------
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request) {

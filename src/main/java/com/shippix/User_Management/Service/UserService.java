@@ -27,5 +27,11 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepo.save(user);
     }
+
+    @Transactional(readOnly = true)
+    public Users getByEmail(String email) {
+        return userRepo.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    }
 }
 
