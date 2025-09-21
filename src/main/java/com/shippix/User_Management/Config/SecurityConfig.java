@@ -34,6 +34,19 @@ public class SecurityConfig {
                         .requestMatchers("/api/requests/**").hasRole("ADMIN")
                         .requestMatchers("/api/users/me").permitAll()
                         .requestMatchers("/api/users/**").authenticated()
+                        // Order Request endpoints - Business Owners only
+                        .requestMatchers("/api/order-requests/**").hasRole("BUSINESS_OWNER")
+                        // Order endpoints - Business Owners only
+                        .requestMatchers("/api/orders/my-orders").hasRole("BUSINESS_OWNER")
+                        .requestMatchers("/api/orders/{id}").hasRole("BUSINESS_OWNER")
+                        .requestMatchers("/api/orders/{id}/feedback").hasRole("BUSINESS_OWNER")
+                        // Admin Order Management endpoints
+                        .requestMatchers("/api/admin/order-requests/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/orders/**").hasRole("ADMIN")
+                        // Admin Shipment Management endpoints
+                        .requestMatchers("/api/admin/shipments/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/warehouses/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/trucks/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())
