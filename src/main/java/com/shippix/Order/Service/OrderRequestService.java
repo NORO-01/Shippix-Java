@@ -4,6 +4,7 @@ import com.shippix.Order.DTO.OrderCreateRequest;
 import com.shippix.Order.DTO.OrderResponse;
 import com.shippix.Order.Model.Order;
 import com.shippix.Order.Model.OrderRequest;
+import com.shippix.Order.Model.Warehouse;
 import com.shippix.Order.Repo.OrderRepo;
 import com.shippix.Order.Repo.OrderRequestRepo;
 import com.shippix.Order.Util.Haversine;
@@ -18,7 +19,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class OrderRequestService {
-
+    private final WarehouseService warehouseService;
     private final OrderRequestRepo orderRequestRepo;
     private final OrderRepo orderRepo;
 
@@ -78,6 +79,9 @@ public class OrderRequestService {
         order.setCustPhoneNumber(req.getCustPhoneNumber());
         order.setCustEmail(req.getCustEmail());
         order.setStatus(Order.Status.ACCEPTED);
+
+        Warehouse assignedWarehouse = warehouseService.assignWarehouse(order);
+        order.setAssignedWarehouse(assignedWarehouse);
 
         Order savedOrder = orderRepo.save(order);
         return OrderResponse.fromOrder(savedOrder);

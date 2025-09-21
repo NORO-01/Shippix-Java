@@ -1,5 +1,6 @@
 package com.shippix.Order.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -59,6 +60,7 @@ public class Truck {
 
     @ManyToOne
     @JoinColumn(name = "warehouse_id")
+    @JsonIgnore
     private Warehouse warehouse;
 
 //    @OneToMany(mappedBy = "assignedTruck")

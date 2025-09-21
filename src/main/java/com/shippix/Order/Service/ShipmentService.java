@@ -90,9 +90,6 @@ public class ShipmentService {
         return ShipmentResponse.fromShipment(shipmentRepo.save(shipment));
     }
 
-    /**
-     * Complete a shipment (truck returns).
-     */
     @Transactional
     public ShipmentResponse completeShipment(Long shipmentId) {
         Shipment shipment = shipmentRepo.findById(shipmentId)
@@ -102,14 +99,40 @@ public class ShipmentService {
             throw new IllegalStateException("Shipment not in progress");
         }
 
+        Warehouse warehouse = shipment.getWarehouse();
+
         // Orders update depending on shipment type
         if (shipment.getType() == Shipment.Type.PICKUP) {
             shipment.getOrders().forEach(o -> {
                 o.setStatus(Order.Status.IN_WAREHOUSE);
-                o.setAssignedWarehouse(shipment.getWarehouse());
+//                o.setAssignedWarehouse(shipment.getWarehouse());
             });
+
+//            double totalWeight = shipment.getOrders().stream()
+//                    .mapToDouble(Order::getPackageWeight)
+//                    .sum();
+//            warehouse.setCurrentOccupancyWeight(warehouse.getCurrentOccupancyWeight() + totalWeight);
+
+            if (warehouse.getCurrentOccupancyWeight() >= warehouse.getCapacityWeight() * 0.95) {
+                warehouse.setStatus(Warehouse.Status.FULL);
+            }
+            warehouseRepo.save(warehouse);
         } else if (shipment.getType() == Shipment.Type.DELIVERY) {
-            shipment.getOrders().forEach(o -> o.setStatus(Order.Status.DELIVERED));
+            shipment.getOrders().forEach(o -> {
+                o.setStatus(Order.Status.DELIVERED);
+                o.setAssignedWarehouse(null);
+            });
+
+            double totalWeight = shipment.getOrders().stream()
+                    .mapToDouble(Order::getPackageWeight)
+                    .sum();
+            warehouse.setCurrentOccupancyWeight(warehouse.getCurrentOccupancyWeight() - totalWeight);
+
+            // Reset warehouse status if it was full
+            if (warehouse.getCurrentOccupancyWeight() < warehouse.getCapacityWeight() * 0.95) {
+                warehouse.setStatus(Warehouse.Status.ACTIVE);
+            }
+            warehouseRepo.save(warehouse);
         }
         orderRepo.saveAll(shipment.getOrders());
 
@@ -124,9 +147,6 @@ public class ShipmentService {
         return ShipmentResponse.fromShipment(shipmentRepo.save(shipment));
     }
 
-    /**
-     * Cancel a shipment (rollback).
-     */
     @Transactional
     public ShipmentResponse cancelShipment(Long shipmentId) {
         Shipment shipment = shipmentRepo.findById(shipmentId)
@@ -154,6 +174,18 @@ public class ShipmentService {
         orderRepo.saveAll(shipment.getOrders());
 
         return ShipmentResponse.fromShipment(shipmentRepo.save(shipment));
+    }
+
+    public List<ShipmentResponse> getAllShipments() {
+        return shipmentRepo.findAll().stream()
+                .map(ShipmentResponse::fromShipment)
+                .toList();
+    }
+
+    public ShipmentResponse getShipmentById(Long shipmentId) {
+        Shipment shipment = shipmentRepo.findById(shipmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Shipment not found"));
+        return ShipmentResponse.fromShipment(shipment);
     }
 }
 

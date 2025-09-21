@@ -11,4 +11,6 @@ public interface OrderRepo extends JpaRepository<Order, Long> {
     List<Order> findByBusinessOwnerId(Long businessOwnerId);
     List<Order> findByStatus(Order.Status status);
     List<Order> findByIsDeletedFalse();
+    List<Order> findByAssignedWarehouse_WarehouseId(Long warehouseId);
+    List<Order> findByAssignedWarehouse_WarehouseIdAndStatus(Long warehouseId, Order.Status status);
 }

@@ -11,4 +11,5 @@ public interface TruckRepo extends JpaRepository<Truck, Long> {
     List<Truck> findByWarehouse_WarehouseId(Long warehouseId);
     List<Truck> findByStatus(Truck.Status status);
     List<Truck> findByIsDeletedFalse();
+    List<Truck> findByWarehouse_WarehouseIdAndStatus(Long warehouseId, Truck.Status status);
 }

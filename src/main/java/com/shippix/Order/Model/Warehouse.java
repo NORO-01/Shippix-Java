@@ -1,5 +1,6 @@
 package com.shippix.Order.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -51,8 +52,10 @@ public class Warehouse {
     // RELATIONS
 
     @OneToMany(mappedBy = "warehouse")
+    @JsonIgnore
     private List<Truck> trucks;
 
     @OneToMany(mappedBy = "assignedWarehouse")
+    @JsonIgnore
     private List<Order> orders;
 }

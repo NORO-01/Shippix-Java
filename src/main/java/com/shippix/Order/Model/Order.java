@@ -1,5 +1,6 @@
 package com.shippix.Order.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shippix.User_Management.Model.BusinessOwner;
 
 import jakarta.persistence.*;
@@ -19,9 +20,7 @@ import java.time.LocalDateTime;
 public class Order {
 
     public enum Status {
-//        PENDING,
         ACCEPTED,
-//        REJECTED,
         IN_PROGRESS,
         PICKED_UP,
         IN_WAREHOUSE,
@@ -69,21 +68,13 @@ public class Order {
     // Assigned warehouse (optional until first assignment)
     @ManyToOne
     @JoinColumn(name = "assigned_warehouse_id")
+    @JsonIgnore
     private Warehouse assignedWarehouse;
 
     // Orders can be part of ONE active shipment (pickup or delivery)
     @ManyToOne
     @JoinColumn(name = "shipment_id")
     private Shipment shipment;
-
-
-//    @ManyToOne
-//    @JoinColumn(name = "assigned_warehouse_id")
-//    private Warehouse assignedWarehouse;
-//
-//    @ManyToOne
-//    @JoinColumn(name = "assigned_truck_id")
-//    private Truck assignedTruck;
 
     private Boolean isDeleted = false;
     private LocalDateTime deletedAt;

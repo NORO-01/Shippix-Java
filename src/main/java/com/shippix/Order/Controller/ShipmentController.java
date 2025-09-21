@@ -48,15 +48,13 @@ public class ShipmentController {
 
     @GetMapping
     public ResponseEntity<List<ShipmentResponse>> getAllShipments() {
-        // Note: This would need a method in ShipmentService to get all shipments
-        // For now, returning empty list - you can implement this in the service if needed
-        return ResponseEntity.ok(List.of());
+        List<ShipmentResponse> shipments = shipmentService.getAllShipments();
+        return ResponseEntity.ok(shipments);
     }
 
     @GetMapping("/{shipmentId}")
     public ResponseEntity<ShipmentResponse> getShipmentById(@PathVariable Long shipmentId) {
-        // Note: This would need a method in ShipmentService to get shipment by ID
-        // For now, returning null - you can implement this in the service if needed
-        return ResponseEntity.ok(null);
+        ShipmentResponse shipment = shipmentService.getShipmentById(shipmentId);
+        return ResponseEntity.ok(shipment);
     }
 }
