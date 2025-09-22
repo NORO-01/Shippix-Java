@@ -59,6 +59,7 @@ public class OrderCreateRequest {
     @NotBlank(message = "Customer phone number must not be blank")
     @Pattern(regexp = "^[0-9]+$", message = "Customer phone number special characters are not allowed")
     @Pattern(regexp = "^\\S.*", message = "Customer phone number first character cannot be space")
+    @Size(min = 11, max = 11, message = "Customer phone number must be exactly 11 digits")
     private String custPhoneNumber;
 
     @NotBlank(message = "Customer email must not be blank")
