@@ -8,19 +8,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class AppConfig
-{
+public class AppConfig {
+
     @Bean
-    public ModelMapper modelMapper()
-    {
+    public ModelMapper modelMapper() {
         ModelMapper mapper = new ModelMapper();
 
-        // Custom mapping Payment -> PaymentResponse
-        mapper.addMappings(new PropertyMap<Payment, PaymentResponse>()
-        {
+        // Custom mapping Payment -> PaymentResponse with null check
+        mapper.addMappings(new PropertyMap<Payment, PaymentResponse>() {
             @Override
             protected void configure() {
-                map().setOrderRequestId(source.getOrderRequest().getReqId());
+                // Null-safe mapping for orderRequestId
+                when(context -> source.getOrderRequest() != null)
+                        .map(source.getOrderRequest().getReqId(), destination.getOrderRequestId());
+
+                // Simple direct mappings
                 map().setAmount(source.getAmount());
                 map().setCode(source.getCode());
             }

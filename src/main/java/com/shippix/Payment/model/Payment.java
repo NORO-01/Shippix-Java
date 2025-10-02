@@ -40,6 +40,7 @@ public class Payment
     @JoinColumn(name = "req_id")
     private OrderRequest orderRequest;
 
+
     private String transactionId; // optional - for real gateways
 
     @CreationTimestamp

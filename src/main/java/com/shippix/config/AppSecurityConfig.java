@@ -30,9 +30,6 @@ public class AppSecurityConfig {
     private final JwtFilter jwtFilter;
     private final MyUserDetailsService myUserDetailsService;
 
-    // -------------------------------
-    // 🔑 User Management Security
-    // -------------------------------
     @Bean
     @Order(1)
     public SecurityFilterChain userSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -59,9 +56,6 @@ public class AppSecurityConfig {
         return http.build();
     }
 
-    // -------------------------------
-    // 💳 Payment Security
-    // -------------------------------
     @Bean
     @Order(2)
     public SecurityFilterChain paymentSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -80,9 +74,6 @@ public class AppSecurityConfig {
         return http.build();
     }
 
-    // -------------------------------
-    // ⚙️ Beans مشتركة
-    // -------------------------------
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);

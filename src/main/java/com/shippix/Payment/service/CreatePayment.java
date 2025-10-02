@@ -29,7 +29,7 @@ public class CreatePayment
                 .orElseThrow(() -> new RuntimeException("OrderRequest not found"));
 
         //ensure not paid before
-        paymentRepo.findByOrderReqId(reqId)
+        paymentRepo.findByOrderRequest_ReqId(reqId)
                 .ifPresent(p -> { throw new RuntimeException("Request already has a payment!"); });
 
         double price = pricingService.calculatePrice(orderRequest);
