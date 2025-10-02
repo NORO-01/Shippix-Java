@@ -14,7 +14,7 @@ import com.shippix.Order.Model.Truck;
 import com.shippix.Order.Repo.TruckRepo;
 import com.shippix.User_Management.Repo.UserRepo;
 import com.shippix.User_Management.Model.Users;
-
+import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -38,7 +38,8 @@ public class DataSeeder implements CommandLineRunner {
 
     BusinessOwner owner = new BusinessOwner();
     owner.setUsername("owner1");
-    owner.setPassword("{noop}owner123");
+    PasswordEncoder passwordEncoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+    owner.setPassword(passwordEncoder.encode("owner123"));
     owner.setEmail("owner1@example.com");
     owner.setRole(Users.Role.ROLE_BUSINESS_OWNER);
     owner.setBusinessName("Tech Store");
