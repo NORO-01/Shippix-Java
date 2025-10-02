@@ -11,21 +11,8 @@ import org.springframework.context.annotation.Configuration;
 public class AppConfig
 {
     @Bean
-    public ModelMapper modelMapper()
-    {
-        ModelMapper mapper = new ModelMapper();
-
-        // Custom mapping Payment -> PaymentResponse
-        mapper.addMappings(new PropertyMap<Payment, PaymentResponse>()
-        {
-            @Override
-            protected void configure() {
-                map().setOrderRequestId(source.getOrderRequest().getReqId());
-                map().setAmount(source.getAmount());
-                map().setCode(source.getCode());
-            }
-        });
-
-        return mapper;
+    public ModelMapper modelMapper() {
+        return new ModelMapper();
     }
+
 }
