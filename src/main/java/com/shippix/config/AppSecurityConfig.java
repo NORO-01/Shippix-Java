@@ -54,6 +54,9 @@ public class AppSecurityConfig
                         // Pricing endpoint
                         .requestMatchers("/api/pricing/**").hasAnyRole("ADMIN", "BUSINESS_OWNER")
 
+                        //dashboard
+                        .requestMatchers("/api/analytics/**").hasRole("BUSINESS_OWNER")
+
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())
