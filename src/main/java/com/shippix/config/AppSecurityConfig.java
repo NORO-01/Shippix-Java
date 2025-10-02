@@ -27,21 +27,6 @@ public class AppSecurityConfig
     private final JwtFilter jwtFilter;
     private final MyUserDetailsService myUserDetailsService;
     @Bean
-    public InMemoryUserDetailsManager inMemoryUserDetailsManager(BCryptPasswordEncoder passwordEncoder) {
-        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-
-        //Gateway
-        manager.createUser(
-                User.withUsername("gateway")
-                        .password(passwordEncoder.encode("gateway123"))
-                        .roles("GATEWAY")
-                        .build()
-        );
-
-        return manager;
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth

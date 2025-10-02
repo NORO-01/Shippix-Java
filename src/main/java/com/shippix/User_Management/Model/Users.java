@@ -19,7 +19,8 @@ public class Users {
 
     public enum Role {
         ROLE_ADMIN,
-        ROLE_BUSINESS_OWNER
+        ROLE_BUSINESS_OWNER,
+        ROLE_GATEWAY
     }
 
     @Id
