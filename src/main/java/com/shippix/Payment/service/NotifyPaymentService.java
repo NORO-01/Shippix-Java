@@ -19,7 +19,7 @@ public class NotifyPaymentService
             throw new RuntimeException("Business owner email not available for this payment!");
         }
 
-        String BOEmail = payment.getOrderRequest().getCustEmail();
+        String BOEmail = payment.getOrderRequest().getBusinessOwner().getEmail();
         String code = payment.getCode();
 
         PaymentCodeTemplate template = new PaymentCodeTemplate(BOEmail, code);
