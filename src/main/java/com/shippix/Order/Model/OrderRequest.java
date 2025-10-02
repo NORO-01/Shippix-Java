@@ -1,5 +1,6 @@
 package com.shippix.Order.Model;
 
+import com.shippix.Payment.model.Payment;
 import com.shippix.User_Management.Model.BusinessOwner;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -8,6 +9,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "order_req")
@@ -26,6 +29,17 @@ public class OrderRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "req_id")
     private Long reqId;
+
+    //newww
+    @OneToMany(mappedBy = "orderRequest", cascade = CascadeType.ALL)
+    private List<Payment> payments = new ArrayList<>();
+
+    @Column(name = "calculated_price")
+    private Double calculatedPrice;     //price returned by pricing service
+
+    @Column(name = "currency")
+    private String currency = "EGP";
+    //////
 
     @ManyToOne
     @JoinColumn(name = "business_owner_id", nullable = false)

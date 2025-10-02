@@ -8,6 +8,7 @@ import com.shippix.Order.Model.Warehouse;
 import com.shippix.Order.Repo.OrderRepo;
 import com.shippix.Order.Repo.OrderRequestRepo;
 import com.shippix.Order.Util.Haversine;
+import com.shippix.Payment.enums.PaymentStatus;
 import com.shippix.User_Management.Model.BusinessOwner;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,15 @@ public class OrderRequestService {
             throw new RuntimeException("Request already processed");
         }
 
+        //newww
+        //lazem y make sure en el payment tmam
+        boolean hasSuccessfulPayment = req.getPayments().stream()
+                .anyMatch(p -> p.getStatus() == PaymentStatus.SUCCESS);
+
+        if (!hasSuccessfulPayment) {
+            throw new RuntimeException("Payment not completed. Cannot approve order.");
+        }
+        //////
         req.setDecision(OrderRequest.Status.APPROVED);
         req.setReviewedAt(LocalDateTime.now());
         orderRequestRepo.save(req);

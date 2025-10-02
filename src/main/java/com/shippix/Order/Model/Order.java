@@ -34,6 +34,18 @@ public class Order {
     @Column(name = "order_id")
     private Long orderId;
 
+    //newww
+    @OneToOne
+    @JoinColumn(name = "req_id")
+    private OrderRequest orderRequest;
+
+    @Column(name = "price")
+    private Double price;
+
+    @Column(name = "currency")
+    private String currency = "EGP";
+    ///////////
+
     @ManyToOne
     @JoinColumn(name = "business_owner_id", nullable = false)
     private BusinessOwner businessOwner;

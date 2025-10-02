@@ -30,6 +30,11 @@ public class OrderRequestResponse {
     private OrderRequest.Status decision;
     private LocalDateTime reviewedAt;
 
+    //newww
+    private Double calculatedPrice;
+    private String currency;
+
+
     public static OrderRequestResponse fromOrderRequest(OrderRequest orderRequest) {
         return new OrderRequestResponse(
                 orderRequest.getReqId(),
@@ -49,7 +54,12 @@ public class OrderRequestResponse {
                 orderRequest.getCustPhoneNumber(),
                 orderRequest.getCustEmail(),
                 orderRequest.getDecision(),
-                orderRequest.getReviewedAt()
-        );
+                orderRequest.getReviewedAt(),
+
+                //newww
+                orderRequest.getCalculatedPrice(),
+                orderRequest.getCurrency()
+
+                );
     }
 }
