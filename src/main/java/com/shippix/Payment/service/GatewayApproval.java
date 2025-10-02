@@ -11,27 +11,26 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class GatewayApproval
-{
-    private final PaymentRepo paymentRepo;
+public class GatewayApproval {
+
+    private final PaymentRepo paymentRepository;
     private final ModelMapper modelMapper;
 
     @Transactional
-    public PaymentResponse simulatePayment(Long reqId, boolean success)
+    public PaymentResponse validatePayment(Long paymentId, String code)
     {
-        Payment payment = paymentRepo.findByOrderReqId(reqId)
+        Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found"));
 
-        if (success)
+        if (payment.getCode().equals(code))
         {
             payment.setStatus(PaymentStatus.SUCCESS);
-            payment.setTransactionId("TX-" + System.currentTimeMillis());
         }
         else {
             payment.setStatus(PaymentStatus.FAILED);
         }
 
-        Payment updated = paymentRepo.save(payment);
+        Payment updated = paymentRepository.save(payment);
         return modelMapper.map(updated, PaymentResponse.class);
     }
 }

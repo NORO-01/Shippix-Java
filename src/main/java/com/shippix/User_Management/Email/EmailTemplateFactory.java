@@ -20,4 +20,10 @@ public class EmailTemplateFactory {
     public EmailTemplate createOtpEmail(String email, Integer otp) {
         return new OtpEmailTemplate(email, otp);
     }
+
+
+    public EmailTemplate createPaymentCodeEmail(String email, String code) {
+        return new PaymentCodeTemplate(email, code);
+    }
+
 }

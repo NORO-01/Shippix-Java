@@ -40,10 +40,6 @@ public class Payment
     @JoinColumn(name = "req_id")
     private OrderRequest orderRequest;
 
-    @OneToOne
-    @JoinColumn(name = "order_id")
-    private Order order; // set after success
-
     private String transactionId; // optional - for real gateways
 
     @CreationTimestamp

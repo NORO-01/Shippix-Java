@@ -1,6 +1,5 @@
 package com.shippix.Payment.service;
 import com.shippix.Order.Model.OrderRequest;
-import com.shippix.Payment.dto.PaymentRequest;
 import com.shippix.Payment.dto.PaymentResponse;
 import com.shippix.Payment.enums.PaymentMethod;
 import com.shippix.Payment.enums.PaymentStatus;
@@ -12,17 +11,16 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class BusinessOwnerPayment
+public class CreatePayment
 {
     private final PaymentRepo paymentRepo;
     private final ModelMapper modelMapper;
     private final PricingService pricingService;
     private final OrderRequestRepo orderRequestRepo;
+    private final NotifyPaymentService notifyPaymentService;
 
     @Transactional
     public PaymentResponse createPayment(Long reqId, PaymentMethod method)
@@ -44,10 +42,15 @@ public class BusinessOwnerPayment
         payment.setCode("PAY-" + System.currentTimeMillis());
 
         Payment saved = paymentRepo.save(payment);
+
+        //send code to email
+        if(saved.getMethod()==PaymentMethod.FAWRY) {
+            notifyPaymentService.sendPaymentCode(saved);
+        }
+
         return modelMapper.map(saved, PaymentResponse.class);
     }
 }
-
 
 
     //TBD -> REFUND
