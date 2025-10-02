@@ -74,7 +74,7 @@ class PaymentServiceTest {
     @Test
     void createPayment_ShouldSaveAndReturnResponse() {
         when(orderRequestRepo.findById(1L)).thenReturn(Optional.of(orderRequest));
-        when(paymentRepo.findByOrderRequest_Id(1L)).thenReturn(Optional.empty());
+        when(paymentRepo.findByOrderRequest_ReqId(1L)).thenReturn(Optional.empty());
         when(pricingService.calculatePrice(orderRequest)).thenReturn(150.0);
         when(paymentRepo.save(any(Payment.class))).thenReturn(payment);
         when(modelMapper.map(payment, PaymentResponse.class)).thenReturn(response);
@@ -87,7 +87,7 @@ class PaymentServiceTest {
         assertEquals(150.0, result.getAmount());
 
         verify(orderRequestRepo).findById(1L);
-        verify(paymentRepo).findByOrderRequest_Id(1L);
+        verify(paymentRepo).findByOrderRequest_ReqId(1L);
         verify(pricingService).calculatePrice(orderRequest);
         verify(paymentRepo).save(any(Payment.class));
         verify(modelMapper).map(payment, PaymentResponse.class);
@@ -97,11 +97,11 @@ class PaymentServiceTest {
     @Test
     void createPayment_WhenRequestAlreadyPaid_ShouldThrowException() {
         when(orderRequestRepo.findById(1L)).thenReturn(Optional.of(orderRequest));
-        when(paymentRepo.findByOrderRequest_Id(1L)).thenReturn(Optional.of(payment));
+        when(paymentRepo.findByOrderRequest_ReqId(1L)).thenReturn(Optional.of(payment));
 
         assertThrows(RuntimeException.class, () -> paymentService.createPayment(1L, PaymentMethod.FAWRY));
 
-        verify(paymentRepo).findByOrderRequest_Id(1L);
+        verify(paymentRepo).findByOrderRequest_ReqId(1L);
         verify(paymentRepo, never()).save(any());
     }
 
@@ -118,7 +118,7 @@ class PaymentServiceTest {
     @Test
     void createPayment_WhenMethodIsFawry_ShouldSendNotification() {
         when(orderRequestRepo.findById(1L)).thenReturn(Optional.of(orderRequest));
-        when(paymentRepo.findByOrderRequest_Id(1L)).thenReturn(Optional.empty());
+        when(paymentRepo.findByOrderRequest_ReqId(1L)).thenReturn(Optional.empty());
         when(pricingService.calculatePrice(orderRequest)).thenReturn(200.0);
         payment.setMethod(PaymentMethod.FAWRY);
         when(paymentRepo.save(any(Payment.class))).thenReturn(payment);
@@ -135,7 +135,7 @@ class PaymentServiceTest {
     @Test
     void createPayment_ShouldGenerateUniqueCodeEachTime() {
         when(orderRequestRepo.findById(1L)).thenReturn(Optional.of(orderRequest));
-        when(paymentRepo.findByOrderRequest_Id(1L)).thenReturn(Optional.empty());
+        when(paymentRepo.findByOrderRequest_ReqId(1L)).thenReturn(Optional.empty());
         when(pricingService.calculatePrice(orderRequest)).thenReturn(100.0);
         when(paymentRepo.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -165,7 +165,7 @@ class PaymentServiceTest {
     @Test
     void createPayment_WhenRepoSaveFails_ShouldPropagateException() {
         when(orderRequestRepo.findById(1L)).thenReturn(Optional.of(orderRequest));
-        when(paymentRepo.findByOrderRequest_Id(1L)).thenReturn(Optional.empty());
+        when(paymentRepo.findByOrderRequest_ReqId(1L)).thenReturn(Optional.empty());
         when(pricingService.calculatePrice(orderRequest)).thenReturn(120.0);
         when(paymentRepo.save(any(Payment.class))).thenThrow(new RuntimeException("DB error"));
 
