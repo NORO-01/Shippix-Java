@@ -45,24 +45,30 @@ public class AppSecurityConfig
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/business-types/**").permitAll()
-                        .requestMatchers("/api/requests/**").hasRole("ADMIN")
+
+                        // User management
                         .requestMatchers("/api/users/me").permitAll()
                         .requestMatchers("/api/users/**").authenticated()
-                        // Order Request endpoints - Business Owners only
+
+                        // Order Request endpoints
                         .requestMatchers("/api/order-requests/**").hasRole("BUSINESS_OWNER")
-                        // Order endpoints - Business Owners only
                         .requestMatchers("/api/orders/my-orders").hasRole("BUSINESS_OWNER")
                         .requestMatchers("/api/orders/{id}").hasRole("BUSINESS_OWNER")
                         .requestMatchers("/api/orders/{id}/feedback").hasRole("BUSINESS_OWNER")
-                        // Admin Order Management endpoints
-                        .requestMatchers("/api/admin/order-requests/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/orders/**").hasRole("ADMIN")
-                        // Admin Shipment Management endpoints
-                        .requestMatchers("/api/admin/shipments/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/warehouses/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/trucks/**").hasRole("ADMIN")
+
+                        // Admin endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Payment endpoints
+                        .requestMatchers("/api/payments/create/**").hasRole("BUSINESS_OWNER")
+                        .requestMatchers("/api/payments/{paymentId}/validate/**").hasRole("GATEWAY")
+
+                        // Pricing endpoint
+                        .requestMatchers("/api/pricing/**").hasAnyRole("ADMIN", "BUSINESS_OWNER")
+
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())
@@ -70,6 +76,7 @@ public class AppSecurityConfig
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
+
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
